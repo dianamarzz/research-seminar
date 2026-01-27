@@ -38,11 +38,39 @@ function loadReviews() {
             Papa.parse(tsvData, {
                 header: true,
                 delimiter: '\t',
+                dynamicTyping: false,  // Add this to ensure proper string handling
+                skipEmptyLines: true,  // Add this to skip empty lines
                 complete: (results) => {
+                    console.log('Parsed results:', results); // Debug log
+                    
+                    if (!results.data || results.data.length === 0) {
+                        console.error('No data found in TSV file');
+                        showError('No data found in TSV file');
+                        return;
+                    }
+                    
+                    // Debug: log the first row to see column names
+                    if (results.data.length > 0) {
+                        console.log('First row keys:', Object.keys(results.data[0]));
+                        console.log('First row:', results.data[0]);
+                    }
+                    
+                    // Extract text column - make sure we use the exact column name
                     reviews = results.data
-                        .map(row => row.text)
+                        .map(row => {
+                            // Try different possible column names
+                            const text = row.text || row.Text || row.TEXT;
+                            return text;
+                        })
                         .filter(text => text && text.trim() !== '');
-                    console.log('Loaded', reviews.length, 'reviews');
+                    
+                    console.log('Loaded', reviews.length, 'reviews from TSV file');
+                    
+                    // Verify we actually loaded data
+                    if (reviews.length === 0) {
+                        console.error('No valid reviews found in TSV file');
+                        showError('No valid reviews found. Please check the TSV file format.');
+                    }
                 },
                 error: (error) => {
                     console.error('TSV parse error:', error);
